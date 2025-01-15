@@ -1,8 +1,3 @@
-# House Price Prediction Pipeline
-# Author: [Your Name]
-# Date: January 15, 2025
-# Description: Modular ML pipeline for predicting house prices using the Ames Housing dataset
-
 
 """
 House Price Prediction Model
