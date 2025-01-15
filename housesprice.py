@@ -1,772 +1,421 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.6
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
-# ---
+# House Price Prediction Pipeline
+# Author: [Your Name]
+# Date: January 15, 2025
+# Description: Modular ML pipeline for predicting house prices using the Ames Housing dataset
 
-# %% _uuid="8f2839f25d086af736a60e9eeb907d3b93b6e0e5" _cell_guid="b1076dfc-b9ad-4769-8c92-a6c4dae69d19"
-# This Python 3 environment comes with many helpful analytics libraries installed
-# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
-# For example, here's several helpful packages to load
 
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+"""
+House Price Prediction Model
+--------------------------------
+This script performs exploratory data analysis and builds a prediction model
+for the Ames Housing dataset. It includes data cleaning, feature engineering,
+and a linear regression model to predict house price.
 
-# Input data files are available in the read-only "../input/" directory
-# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+Author: Andrew Obwocha
+Date: January 15, 2025
+"""
 
-import os
-for dirname, _, filenames in os.walk('/kaggle/input'):
-    for filename in filenames:
-        print(os.path.join(dirname, filename))
-
-# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
-# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
-
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-# %%
-df = pd.read_csv('/kaggle/input/house-prices-advanced-regression-techniques/train.csv')
-
-numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns
-numerical_df = df[numerical_cols]
-categorical_df = df[[column for column in df.columns if column not in numerical_cols]]
-
-numerical_df.head()
-
-# %%
-categorical_df.head()
-
-# %%
-numerical_df.describe()
-
-# %%
-numerical_df = numerical_df.drop('Id', axis=1)
-df = df.drop('Id', axis=1)
-numerical_df.columns
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='MSSubClass', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against MSSubClass')
-plt.xlabel('MSSubClass')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-numerical_df = numerical_df[numerical_df['LotFrontage'] <= 200]
-df = df[df['LotFrontage'] <= 200]
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='LotFrontage', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against LotFrontage')
-plt.xlabel('LotFrontage')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['LotFrontage'], bins=20, kde=True)
-plt.title('Histogram of LotFrontage')
-plt.xlabel('LotFrontage')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='LotFrontage', data=numerical_df)
-plt.title('Boxplot of LotFrontage')
-plt.xlabel('LotFrontage')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df = numerical_df[numerical_df['LotArea'] <= 30000]
-df = df[df['LotArea'] <= 30000]
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='LotArea', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against LotArea')
-plt.xlabel('LotArea')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['LotArea'], bins=20, kde=True)
-plt.title('Histogram of LotArea')
-plt.xlabel('LotArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='LotArea', data=numerical_df)
-plt.title('Boxplot of LotArea')
-plt.xlabel('LotArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='YearBuilt', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against YearBuilt')
-plt.xlabel('YearBuilt')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='YearRemodAdd', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against YearRemodAdd')
-plt.xlabel('YearRemodAdd')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-numerical_df['MasVnrArea'] = np.sqrt(numerical_df['MasVnrArea'])
-df['MasVnrArea'] = np.sqrt(df['MasVnrArea'])
-skewed_cols = ['MasVnrArea']
-transformed_cols = ['MasVnrArea']
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='MasVnrArea', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against MasVnrArea')
-plt.xlabel('MasVnrArea')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['MasVnrArea'], bins=10, kde=True)
-plt.title('Histogram of MasVnrArea')
-plt.xlabel('MasVnrArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='MasVnrArea', data=numerical_df)
-plt.title('Boxplot of MasVnrArea')
-plt.xlabel('MasVnrArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['BsmtFinSF1'] = np.sqrt(numerical_df['BsmtFinSF1'])
-df['BsmtFinSF1'] = np.sqrt(df['BsmtFinSF1'])
-transformed_cols.append('BsmtFinSF1')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='BsmtFinSF1', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against BsmtFinSF1')
-plt.xlabel('BsmtFinSF1')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['BsmtFinSF1'], bins=10, kde=True)
-plt.title('Histogram of BsmtFinSF1')
-plt.xlabel('BsmtFinSF1')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='BsmtFinSF1', data=numerical_df)
-plt.title('Boxplot of BsmtFinSF1')
-plt.xlabel('BsmtFinSF1')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['BsmtFinSF2'] = np.sqrt(numerical_df['BsmtFinSF2'])
-df['BsmtFinSF2'] = np.sqrt(df['BsmtFinSF2'])
-skewed_cols.append('BsmtFinSF2')
-transformed_cols.append('BsmtFinSF2')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='BsmtFinSF2', y='SalePrice', data=numerical_df)
-plt.title('Scatterplot of SalePrice against BsmtFinSF2')
-plt.xlabel('BsmtFinSF2')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['BsmtFinSF2'], bins=20, kde=True)
-plt.title('Histogram for BsmtFinSF2')
-plt.xlabel('BsmtFinSF2')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='BsmtFinSF2', data=numerical_df)
-plt.title('Boxplot of BsmtFinSF2')
-plt.xlabel('BsmtFinSF2')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['BsmtUnfSF'] = np.sqrt(numerical_df['BsmtUnfSF'])
-df['BsmtUnfSF'] = np.sqrt(df['BsmtUnfSF'])
-
-transformed_cols.append('BsmtUnfSF')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='BsmtUnfSF', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against BsmtUnfSF')
-plt.xlabel('BsmtUnfSF')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['BsmtUnfSF'], bins=10, kde=True)
-plt.title('Histogram of BsmtUnfSF')
-plt.xlabel('BsmtUnfSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='BsmtUnfSF', data=numerical_df)
-plt.title('Boxplot of BsmtUnfSF')
-plt.xlabel('BsmtUnfSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='TotalBsmtSF', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against TotalBsmtSF')
-plt.xlabel('TotalBsmtSF')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['TotalBsmtSF'], bins=10, kde=True)
-plt.title('Histogram of TotalBsmtSF')
-plt.xlabel('TotalBsmtSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='TotalBsmtSF', data=numerical_df)
-plt.title('Boxplot of TotalBsmtSF')
-plt.xlabel('TotalBsmtSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='1stFlrSF', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against 1stFlrSF')
-plt.xlabel('1stFlrSF')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['1stFlrSF'], bins=10, kde=True)
-plt.title('Histogram of 1stFlrSF')
-plt.xlabel('1stFlrSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='1stFlrSF', data=numerical_df)
-plt.title('Boxplot of 1stFlrSF')
-plt.xlabel('1stFlrSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['2ndFlrSF'] = np.sqrt(numerical_df['2ndFlrSF'])
-df['2ndFlrSF'] = np.sqrt(df['2ndFlrSF'])
-
-skewed_cols.append('2ndFlrSF')
-transformed_cols.append('2ndFlrSF')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='2ndFlrSF', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against 2ndFlrSF')
-plt.xlabel('2ndFlrSF')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['2ndFlrSF'], bins=10, kde=True)
-plt.title('Histogram of 2ndFlrSF')
-plt.xlabel('2ndFlrSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='2ndFlrSF', data=numerical_df)
-plt.title('Boxplot of 2ndFlrSF')
-plt.xlabel('2ndFlrSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['LowQualFinSF'] = np.sqrt(numerical_df['LowQualFinSF'])
-df['LowQualFinSF'] = np.sqrt(df['LowQualFinSF'])
-
-skewed_cols.append('LowQualFinSF')
-transformed_cols.append('LowQualFinSF')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='LowQualFinSF', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against LowQualFinSF')
-plt.xlabel('LowQualFinSF')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['LowQualFinSF'], bins=10, kde=True)
-plt.title('Histogram of LowQualFinSF')
-plt.xlabel('LowQualFinSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='LowQualFinSF', data=numerical_df)
-plt.title('Boxplot of LowQualFinSF')
-plt.xlabel('LowQualFinSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='GrLivArea', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against GrLivArea')
-plt.xlabel('GrLivArea')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['GrLivArea'], bins=10, kde=True)
-plt.title('Histogram of GrLivArea')
-plt.xlabel('GrLivArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='GrLivArea', data=numerical_df)
-plt.title('Boxplot of GrLivArea')
-plt.xlabel('GrLivArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='BsmtFullBath', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against BsmtFullBath')
-plt.xlabel('BsmtFullBath')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='GarageCars', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against GarageCars')
-plt.xlabel('GarageCars')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='GarageArea', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against GarageArea')
-plt.xlabel('GarageArea')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['GarageArea'], bins=10, kde=True)
-plt.title('Histogram of GarageArea')
-plt.xlabel('GarageArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='GarageArea', data=numerical_df)
-plt.title('Boxplot of GarageArea')
-plt.xlabel('GarageArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['WoodDeckSF'] = np.sqrt(numerical_df['WoodDeckSF'])
-df['WoodDeckSF'] = np.sqrt(df['WoodDeckSF'])
-transformed_cols.append('WoodDeckSF')
-skewed_cols.append('WoodDeckSF')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='WoodDeckSF', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against WoodDeckSF')
-plt.xlabel('WoodDeckSF')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['WoodDeckSF'], bins=10, kde=True)
-plt.title('Histogram of WoodDeckSF')
-plt.xlabel('WoodDeckSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='WoodDeckSF', data=numerical_df)
-plt.title('Boxplot of WoodDeckSF')
-plt.xlabel('WoodDeckSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['OpenPorchSF'] = np.sqrt(numerical_df['OpenPorchSF'])
-df['OpenPorchSF'] = np.sqrt(df['OpenPorchSF'])
-
-transformed_cols.append('OpenPorchSF')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='OpenPorchSF', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against OpenPorchSF')
-plt.xlabel('OpenPorchSF')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['OpenPorchSF'], bins=10, kde=True)
-plt.title('Histogram of OpenPorchSF')
-plt.xlabel('OpenPorchSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='OpenPorchSF', data=numerical_df)
-plt.title('Boxplot of OpenPorchSF')
-plt.xlabel('OpenPorchSF')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['EnclosedPorch'] = np.sqrt(numerical_df['EnclosedPorch'])
-df['EnclosedPorch'] = np.sqrt(df['EnclosedPorch'])
-
-transformed_cols.append('EnclosedPorch')
-skewed_cols.append('EnclosedPorch')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='EnclosedPorch', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against EnclosedPorch')
-plt.xlabel('EnclosedPorch')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['EnclosedPorch'], bins=10, kde=True)
-plt.title('Histogram of EnclosedPorch')
-plt.xlabel('EnclosedPorch')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='EnclosedPorch', data=numerical_df)
-plt.title('Boxplot of EnclosedPorch')
-plt.xlabel('EnclosedPorch')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['3SsnPorch'] = np.sqrt(numerical_df['3SsnPorch'])
-df['3SsnPorch'] = np.sqrt(df['3SsnPorch'])
-
-transformed_cols.append('3SsnPorch')
-skewed_cols.append('3SsnPorch')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='3SsnPorch', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against 3SsnPorch')
-plt.xlabel('3SsnPorch')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['3SsnPorch'], bins=10, kde=True)
-plt.title('Histogram of 3SsnPorch')
-plt.xlabel('3SsnPorch')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='3SsnPorch', data=numerical_df)
-plt.title('Boxplot of 3SsnPorch')
-plt.xlabel('3SsnPorch')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['ScreenPorch'] = np.sqrt(numerical_df['ScreenPorch'])
-transformed_cols.append('ScreenPorch')
-skewed_cols.append('ScreenPorch')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='ScreenPorch', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against ScreenPorch')
-plt.xlabel('ScreenPorch')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['ScreenPorch'], bins=10, kde=True)
-plt.title('Histogram of ScreenPorch')
-plt.xlabel('ScreenPorch')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='ScreenPorch', data=numerical_df)
-plt.title('Boxplot of ScreenPorch')
-plt.xlabel('ScreenPorch')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['PoolArea'] = np.sqrt(numerical_df['PoolArea'])
-transformed_cols.append('PoolArea')
-skewed_cols.append('PoolArea')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='PoolArea', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against PoolArea')
-plt.xlabel('PoolArea')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['PoolArea'], bins=10, kde=True)
-plt.title('Histogram of PoolArea')
-plt.xlabel('PoolArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='PoolArea', data=numerical_df)
-plt.title('Boxplot of PoolArea')
-plt.xlabel('PoolArea')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-numerical_df['MiscVal'] = np.sqrt(numerical_df['MiscVal'])
-transformed_cols.append('MiscVal')
-skewed_cols.append('MiscVal')
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x='MiscVal', y='SalePrice', data=numerical_df)
-plt.title('Scatterpolot of SalePrice against MiscVal')
-plt.xlabel('MiscVal')
-plt.ylabel('SalePrice')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.histplot(numerical_df['MiscVal'], bins=10, kde=True)
-plt.title('Histogram of MiscVal')
-plt.xlabel('MiscVal')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-plt.figure(figsize=(8, 6))
-sns.boxplot(x='MiscVal', data=numerical_df)
-plt.title('Boxplot of MiscVal')
-plt.xlabel('MiscVal')
-plt.ylabel('Count')
-plt.show()
-
-# %%
-transformed_cols
-
-# %%
-skewed_cols
-
-# %%
-numerical_df = numerical_df[[column for column in numerical_df if column not in skewed_cols]]
-
-# %%
-correlation_matrix = numerical_df.corr()
-sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm', fmt='.2f', linewidths=.5)
-plt.title('Correlation of features')
-plt.show()
-
-# %%
-high_correlations = []
-for i in range(len(correlation_matrix.columns)):
-    for j in range(i):
-        if abs(correlation_matrix.iloc[i, j]) > 0.5:
-            high_correlations.append({
-                'Feature 1' : correlation_matrix.columns[i],
-                'Feature 2' : correlation_matrix.columns[j],
-                'Correlation' : correlation_matrix.iloc[i, j]
-            }) 
-
-high_corr_df = pd.DataFrame(high_correlations).sort_values(
-    by='Correlation',
-    key=abs,
-    ascending=False
-)
-
-high_corr_df
-
-# %%
-high_corr_df[high_corr_df['Feature 1'] == 'SalePrice']
-
-# %%
-current_year = df['YrSold']
-df['HouseAge'] = current_year - df['YearBuilt']
-df['YearsSinceReno'] = current_year - df['YearRemodAdd']
-
-# %%
-numerical_cols = [
-    'OverallQual', 
-    'GrLivArea', 
-    'TotalBsmtSF', 
-    'GarageCars', 
-    'YearBuilt',
-    'HouseAge',
-    'YearsSinceReno',
-    'SalePrice'
-]
-
-# %%
-df.columns
-
-# %%
-df_columns = []
-for col in df.columns:
-    if col not in df.select_dtypes(include=['int64', 'float64']) or col in numerical_cols:
-        df_columns.append(col)
-
-df = df[df_columns]
-        
-
-# %%
-df.columns
-
-# %%
-quality_mapping = {
-    'Ex': 5,
-    'Gd': 4,
-    'TA': 3,
-    'Fa': 2,
-    'Po': 1,
-    'NA': 0
-}
-
-quality_cols = ['ExterQual', 'KitchenQual', 'BsmtQual']
-for col in quality_cols:
-    df[f'{col}_encoded'] = df[col].map(quality_mapping)
-
-categorical_cols = [
-    'ExterQual_encoded', 
-    'KitchenQual_encoded',
-    'BsmtQual_encoded',    
-]
-
-df_columns = []
-for col in df.columns:
-    if col in df.select_dtypes(include=['int64', 'float64']) or col in categorical_cols:
-        df_columns.append(col)
-
-df = df[df_columns]
-
-
-# %%
-df.columns
-
-# %%
-df['BsmtQual_encoded'] = df['BsmtQual_encoded'].fillna(0)
-df.isnull().sum()
-
-# %%
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from sklearn.ensemble import RandomForestRegressor
+import logging
+from datetime import datetime
+import os
+import warnings
+warnings.filterwarnings('ignore')
 
-X = df.drop('SalePrice', axis=1)
-y = df['SalePrice']
+class Logger:
+    """
+    Custom logger class for the house price prediction pipeline
+    """
+    def __init__(self, name, log_dir='logs'):
+        """
+        Initialize logger with custom formatting and handlers
+        
+        Args:
+            name (str): Logger name
+            log_dir (str): Directory to store log files
+        """
+        # Create logs directory if it doesn't exist
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+            
+        # Create logger
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.DEBUG)
+        
+        # Create formatters
+        file_formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        console_formatter = logging.Formatter(
+            '%(levelname)s - %(message)s'
+        )
+        
+        # File handler
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        file_handler = logging.FileHandler(
+            f'{log_dir}/house_price_prediction_{timestamp}.log'
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(file_formatter)
+        
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(console_formatter)
+        
+        # Add handlers
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
+        
+    def get_logger(self):
+        """Return logger instance"""
+        return self.logger
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+class DataLoader:
+    """
+    Class to handle data loading and initial splitting
+    """
+    def __init__(self, data_path):
+        """
+        Initialize data loader with path and logger
+        
+        Args:
+            data_path (str): Path to the training data CSV file
+        """
+        self.data_path = data_path
+        self.logger = Logger('DataLoader').get_logger()
+        self.df = None
+        self.numerical_df = None
+        self.categorical_df = None
+        
+    def load_data(self):
+        """Load and perform initial data splitting"""
+        self.logger.info("Loading dataset...")
+        try:
+            self.df = pd.read_csv(self.data_path)
+            self.logger.info(f"Loaded dataset with {self.df.shape[0]} rows and {self.df.shape[1]} columns")
+            
+            # Split into numerical and categorical dataframes
+            self.numerical_df = self.df.select_dtypes(include=['int64', 'float64'])
+            self.categorical_df = self.df.select_dtypes(exclude=['int64', 'float64'])
+            
+            return self.df, self.numerical_df, self.categorical_df
+            
+        except Exception as e:
+            self.logger.error(f"Error loading data: {str(e)}")
+            raise
 
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+class ExploratoryDataAnalysis:
+    """
+    Class to handle all exploratory data analysis tasks
+    """
+    def __init__(self, df, numerical_df, categorical_df):
+        """
+        Initialize EDA class with dataframes and logger
+        
+        Args:
+            df (pd.DataFrame): Complete dataset
+            numerical_df (pd.DataFrame): Numerical features
+            categorical_df (pd.DataFrame): Categorical features
+        """
+        self.df = df
+        self.numerical_df = numerical_df
+        self.categorical_df = categorical_df
+        self.logger = Logger('EDA').get_logger()
+        
+    def run_eda(self):
+        """Execute complete EDA pipeline"""
+        self.logger.info("Starting Exploratory Data Analysis...")
+        
+        try:
+            # Basic statistics
+            self._analyze_basic_stats()
+            
+            # Missing values
+            self._analyze_missing_values()
+            
+            # Correlation analysis
+            self._analyze_correlations()
+            
+            # Visualizations
+            self._create_visualizations()
+            
+        except Exception as e:
+            self.logger.error(f"Error in EDA: {str(e)}")
+            raise
+            
+    def _analyze_basic_stats(self):
+        """Analyze basic statistics of numerical features"""
+        self.logger.info("Analyzing basic statistics...")
+        stats = self.numerical_df.describe()
+        self.logger.debug(f"\nNumerical Data Summary:\n{stats}")
+        
+    def _analyze_missing_values(self):
+        """Analyze missing values in the dataset"""
+        missing_values = self.df.isnull().sum()
+        missing_values = missing_values[missing_values > 0]
+        self.logger.info(f"\nFeatures with missing values:\n{missing_values}")
+        
+    def _analyze_correlations(self):
+        """Analyze feature correlations with target variable"""
+        correlations = self.numerical_df.corr()['SalePrice'].sort_values(ascending=False)
+        self.logger.info(f"\nTop 10 correlated features with Sale Price:\n{correlations[:10]}")
+        
+    def _create_visualizations(self):
+        """Create and save important visualizations"""
+        self.logger.info("Creating visualizations...")
+        
+        # Correlation heatmap
+        plt.figure(figsize=(12, 8))
+        top_corr_features = self.numerical_df.corr()['SalePrice'].sort_values(ascending=False)[:10].index
+        correlation_matrix = self.numerical_df[top_corr_features].corr()
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f')
+        plt.title('Correlation Heatmap - Top Features')
+        plt.tight_layout()
+        plt.savefig('correlation_heatmap.png')
+        plt.close()
+        
+        # Price distribution
+        plt.figure(figsize=(10, 6))
+        sns.histplot(self.df['SalePrice'], kde=True)
+        plt.title('Sale Price Distribution')
+        plt.xlabel('Price')
+        plt.ylabel('Count')
+        plt.savefig('price_distribution.png')
+        plt.close()
 
-model = LinearRegression()
-model.fit(X_train_scaled, y_train)
+class DataPreprocessor:
+    """
+    Class to handle all data preprocessing tasks
+    """
+    def __init__(self, df):
+        """
+        Initialize preprocessor with dataframe and logger
+        
+        Args:
+            df (pd.DataFrame): Input dataframe
+        """
+        self.df = df.copy()
+        self.logger = Logger('Preprocessor').get_logger()
+        self.X = None
+        self.y = None
+        self.scaler = StandardScaler()
+        
+    def preprocess_data(self):
+        """Execute complete preprocessing pipeline"""
+        self.logger.info("Starting data preprocessing...")
+        
+        try:
+            # Remove unnecessary columns
+            self._remove_unnecessary_columns()
+            
+            # Feature engineering
+            self._engineer_features()
+            
+            # Handle missing values
+            self._handle_missing_values()
+            
+            # Select features
+            self._select_features()
+            
+            # Scale features
+            self._scale_features()
+            
+            return self.X, self.y
+            
+        except Exception as e:
+            self.logger.error(f"Error in preprocessing: {str(e)}")
+            raise
+            
+    def _remove_unnecessary_columns(self):
+        """Remove ID and other unnecessary columns"""
+        if 'Id' in self.df.columns:
+            self.df = self.df.drop('Id', axis=1)
+            self.logger.debug("Removed Id column")
+            
+    def _engineer_features(self):
+        """Create new features"""
+        self.logger.info("Engineering new features...")
+        
+        # Age-related features
+        self.df['HouseAge'] = self.df['YrSold'] - self.df['YearBuilt']
+        self.df['YearsSinceReno'] = self.df['YrSold'] - self.df['YearRemodAdd']
+        
+        # Quality encodings
+        quality_mapping = {'Ex': 5, 'Gd': 4, 'TA': 3, 'Fa': 2, 'Po': 1, 'NA': 0}
+        quality_cols = ['ExterQual', 'KitchenQual', 'BsmtQual']
+        
+        for col in quality_cols:
+            self.df[f'{col}_encoded'] = self.df[col].map(quality_mapping)
+            
+    def _handle_missing_values(self):
+        """Handle missing values in the dataset"""
+        self.logger.info("Handling missing values...")
+        self.df = self.df.fillna(0)
+        
+    def _select_features(self):
+        """Select final feature set"""
+        selected_features = [
+            'OverallQual', 'GrLivArea', 'TotalBsmtSF', 'GarageCars',
+            'YearBuilt', 'HouseAge', 'YearsSinceReno', 'ExterQual_encoded',
+            'KitchenQual_encoded', 'BsmtQual_encoded'
+        ]
+        
+        self.X = self.df[selected_features]
+        self.y = self.df['SalePrice']
+        self.logger.info(f"Selected {len(selected_features)} features")
+        
+    def _scale_features(self):
+        """Scale features using StandardScaler"""
+        self.X = pd.DataFrame(
+            self.scaler.fit_transform(self.X),
+            columns=self.X.columns
+        )
+        self.logger.info("Features scaled using StandardScaler")
 
-y_pred = model.predict(X_test_scaled)
+class ModelTrainer:
+    """
+    Class to handle model training and evaluation
+    """
+    def __init__(self, X, y):
+        """
+        Initialize trainer with features, target, and logger
+        
+        Args:
+            X (pd.DataFrame): Feature matrix
+            y (pd.Series): Target variable
+        """
+        self.X = X
+        self.y = y
+        self.logger = Logger('ModelTrainer').get_logger()
+        self.models = {}
+        self.results = {}
+        
+    def train_models(self):
+        """Train and evaluate multiple models"""
+        self.logger.info("Starting model training...")
+        
+        try:
+            # Split data
+            X_train, X_test, y_train, y_test = train_test_split(
+                self.X, self.y, test_size=0.2, random_state=42
+            )
+            
+            # Initialize models
+            models = {
+                'Linear Regression': LinearRegression(),
+                'Ridge Regression': Ridge(alpha=1.0),
+                'Random Forest': RandomForestRegressor(n_estimators=100, random_state=42)
+            }
+            
+            # Train and evaluate each model
+            for name, model in models.items():
+                self.logger.info(f"\nTraining {name}...")
+                self._train_and_evaluate(name, model, X_train, X_test, y_train, y_test)
+                
+            return self.results
+            
+        except Exception as e:
+            self.logger.error(f"Error in model training: {str(e)}")
+            raise
+            
+    def _train_and_evaluate(self, name, model, X_train, X_test, y_train, y_test):
+        """Train and evaluate a single model"""
+        # Train model
+        model.fit(X_train, y_train)
+        self.models[name] = model
+        
+        # Make predictions
+        y_pred = model.predict(X_test)
+        
+        # Calculate metrics
+        metrics = self._calculate_metrics(y_test, y_pred)
+        
+        # Perform cross-validation
+        cv_scores = cross_val_score(
+            model, X_train, y_train,
+            cv=5, scoring='r2'
+        )
+        
+        # Store results
+        self.results[name] = {
+            'metrics': metrics,
+            'cv_scores': {
+                'mean': cv_scores.mean(),
+                'std': cv_scores.std()
+            }
+        }
+        
+        # Log results
+        self._log_results(name, metrics, cv_scores)
+        
+        # Plot feature importance for Random Forest
+        if name == 'Random Forest':
+            self._plot_feature_importance(model)
+            
+    def _calculate_metrics(self, y_true, y_pred):
+        """Calculate model performance metrics"""
+        return {
+            'rmse': np.sqrt(mean_squared_error(y_true, y_pred)),
+            'mae': mean_absolute_error(y_true, y_pred),
+            'r2': r2_score(y_true, y_pred)
+        }
+        
+    def _log_results(self, name, metrics, cv_scores):
+        """Log model results"""
+        self.logger.info(f"\nPerformance Metrics for {name}:")
+        self.logger.info(f"RMSE: ${metrics['rmse']:,.2f}")
+        self.logger.info(f"MAE: ${metrics['mae']:,.2f}")
+        self.logger.info(f"R² Score: {metrics['r2']:.3f}")
+        self.logger.info(f"Cross-validation R² scores: {cv_scores.mean():.3f} (+/- {cv_scores.std() * 2:.3f})")
+        
+    def _plot_feature_importance(self, model):
+        """Plot feature importance for tree-based models"""
+        importance = pd.DataFrame({
+            'feature': self.X.columns,
+            'importance': model.feature_importances_
+        }).sort_values('importance', ascending=False)
+        
+        plt.figure(figsize=(10, 6))
+        sns.barplot(data=importance, x='importance', y='feature')
+        plt.title('Feature Importance (Random Forest)')
+        plt.tight_layout()
+        plt.savefig('feature_importance.png')
+        plt.close()
 
-
-mse = mean_squared_error(y_test, y_pred)
-rmse = np.sqrt(mse)
-mae = mean_absolute_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-print(f"Root Mean Squared Error: ${rmse:,.2f}")
-print(f"Mean Absolute Error: ${mae:,.2f}")
-print(f"R² Score: {r2:.3f}")
+# Example usage
+if __name__ == "__main__":
+    # Initialize logger
+    main_logger = Logger('Main').get_logger()
+    main_logger.info("Starting House Price Prediction Pipeline...")
+    
+    try:
+        # Load data
+        data_loader = DataLoader('/kaggle/input/house-prices-advanced-regression-techniques/train.csv')
+        df, numerical_df, categorical_df = data_loader.load_data()
+        
+        # Perform EDA
+        eda = ExploratoryDataAnalysis(df, numerical_df, categorical_df)
+        eda.run_eda()
+        
+        # Preprocess data
+        preprocessor = DataPreprocessor(df)
+        X, y = preprocessor.preprocess_data()
+        
+        # Train models
+        trainer = ModelTrainer(X, y)
+        results = trainer.train_models()
+        
+        main_logger.info("Pipeline completed successfully!")
+        
+    except Exception as e:
+        main_logger.error(f"Pipeline failed: {str(e)}")
+        raise
