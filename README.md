@@ -35,7 +35,7 @@ The model expects housing data with features like:
 
 ## Requirements
 
-- Python 3.x
+- Python 3.0
 - scikit-learn
 - pandas
 - numpy
