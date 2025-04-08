@@ -14,9 +14,9 @@ This project uses regression algorithms to estimate property values based on fea
 
 ## Installation
 
-git clone https://github.com/AndrewObwocha/HousePricePredictor.git
-cd HousePricePredictor
-pip install -r requirements.txt
+1. git clone https://github.com/AndrewObwocha/HousePricePredictor.git
+2. cd HousePricePredictor
+3. pip install -r requirements.txt
 
 ## Usage
 
